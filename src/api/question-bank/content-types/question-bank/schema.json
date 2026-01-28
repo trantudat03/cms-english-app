@@ -1,0 +1,48 @@
+{
+  "kind": "collectionType",
+  "collectionName": "question_banks",
+  "info": {
+    "singularName": "question-bank",
+    "pluralName": "question-banks",
+    "displayName": "Question Bank",
+    "description": "Rules for dynamic question selection"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "column": {
+        "notNullable": true
+      }
+    },
+    "description": {
+      "type": "text"
+    },
+    "filters": {
+      "type": "json",
+      "default": {}
+    },
+    "defaultQuestionCount": {
+      "type": "integer",
+      "default": 10
+    },
+    "shuffle": {
+      "type": "boolean",
+      "default": true
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "lessons": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::lesson.lesson",
+      "mappedBy": "questionBank"
+    }
+  }
+}

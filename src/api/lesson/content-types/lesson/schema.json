@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "lessons",
+  "info": {
+    "singularName": "lesson",
+    "pluralName": "lessons",
+    "displayName": "Lesson",
+    "description": "Lesson configuration referencing a question bank"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "column": {
+        "notNullable": true
+      }
+    },
+    "description": {
+      "type": "text"
+    },
+    "questionBank": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::question-bank.question-bank",
+      "inversedBy": "lessons",
+      "required": true
+    },
+    "questionCount": {
+      "type": "integer"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "topics",
+  "info": {
+    "singularName": "topic",
+    "pluralName": "topics",
+    "displayName": "Topic",
+    "description": "Reference taxonomy for question classification"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "column": {
+        "unique": true,
+        "notNullable": true
+      }
+    },
+    "name": {
+      "type": "string",
+      "required": true,
+      "column": {
+        "notNullable": true
+      }
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "questions": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::question.question",
+      "mappedBy": "topics"
+    }
+  }
+}
