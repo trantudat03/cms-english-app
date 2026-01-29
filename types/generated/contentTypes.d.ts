@@ -430,168 +430,60 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiAboutAbout extends Struct.SingleTypeSchema {
-  collectionName: 'abouts';
+export interface ApiLessonAttemptLessonAttempt
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'lesson_attempts';
   info: {
-    description: 'Write about yourself and the content you create';
-    displayName: 'About';
-    pluralName: 'abouts';
-    singularName: 'about';
+    description: 'Snapshot of generated questions for a user starting a lesson';
+    displayName: 'Lesson Attempt';
+    pluralName: 'lesson-attempts';
+    singularName: 'lesson-attempt';
   };
   options: {
     draftAndPublish: false;
   };
   attributes: {
-    blocks: Schema.Attribute.DynamicZone<
-      ['shared.media', 'shared.quote', 'shared.rich-text', 'shared.slider']
+    answers: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-answer.user-answer'
     >;
+    configSnapshot: Schema.Attribute.JSON;
+    correctCount: Schema.Attribute.Integer;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    generatedQuestionIds: Schema.Attribute.JSON & Schema.Attribute.Required;
+    lesson: Schema.Attribute.Relation<'manyToOne', 'api::lesson.lesson'> &
+      Schema.Attribute.Required;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<'oneToMany', 'api::about.about'> &
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::lesson-attempt.lesson-attempt'
+    > &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
-    title: Schema.Attribute.String;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiArticleArticle extends Struct.CollectionTypeSchema {
-  collectionName: 'articles';
-  info: {
-    description: 'Create your blog content';
-    displayName: 'Article';
-    pluralName: 'articles';
-    singularName: 'article';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    author: Schema.Attribute.Relation<'manyToOne', 'api::author.author'>;
-    blocks: Schema.Attribute.DynamicZone<
-      ['shared.media', 'shared.quote', 'shared.rich-text', 'shared.slider']
+    questionBank: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::question-bank.question-bank'
     >;
-    category: Schema.Attribute.Relation<'manyToOne', 'api::category.category'>;
-    cover: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 80;
-      }>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::article.article'
+    score: Schema.Attribute.Integer;
+    startedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['in_progress', 'completed', 'expired']
     > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    slug: Schema.Attribute.UID<'title'>;
-    title: Schema.Attribute.String;
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'in_progress'>;
+    submittedAt: Schema.Attribute.DateTime;
+    timeSpent: Schema.Attribute.Integer;
+    totalQuestions: Schema.Attribute.Integer;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-  };
-}
-
-export interface ApiAuthorAuthor extends Struct.CollectionTypeSchema {
-  collectionName: 'authors';
-  info: {
-    description: 'Create authors for your content';
-    displayName: 'Author';
-    pluralName: 'authors';
-    singularName: 'author';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    articles: Schema.Attribute.Relation<'oneToMany', 'api::article.article'>;
-    avatar: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    email: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::author.author'
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
     > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiCategoryCategory extends Struct.CollectionTypeSchema {
-  collectionName: 'categories';
-  info: {
-    description: 'Organize your content into categories';
-    displayName: 'Category';
-    pluralName: 'categories';
-    singularName: 'category';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    articles: Schema.Attribute.Relation<'oneToMany', 'api::article.article'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::category.category'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    slug: Schema.Attribute.UID;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
-  collectionName: 'globals';
-  info: {
-    description: 'Define global settings';
-    displayName: 'Global';
-    pluralName: 'globals';
-    singularName: 'global';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    defaultSeo: Schema.Attribute.Component<'shared.seo', false>;
-    favicon: Schema.Attribute.Media<'images' | 'files' | 'videos'>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::global.global'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    siteDescription: Schema.Attribute.Text & Schema.Attribute.Required;
-    siteName: Schema.Attribute.String & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
+      Schema.Attribute.Required;
   };
 }
 
@@ -607,16 +499,23 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    attempts: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::lesson-attempt.lesson-attempt'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
+    lessonType: Schema.Attribute.Enumeration<['lesson', 'quiz', 'test']> &
+      Schema.Attribute.DefaultTo<'quiz'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::lesson.lesson'
     > &
       Schema.Attribute.Private;
+    passScore: Schema.Attribute.Integer;
     publishedAt: Schema.Attribute.DateTime;
     questionBank: Schema.Attribute.Relation<
       'manyToOne',
@@ -624,6 +523,11 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Required;
     questionCount: Schema.Attribute.Integer;
+    retryPolicy: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    showExplanationOnSubmit: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    shuffleQuestions: Schema.Attribute.Boolean;
+    timeLimit: Schema.Attribute.Integer;
     title: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -695,6 +599,10 @@ export interface ApiQuestionBankQuestionBank
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    randomizationStrategy: Schema.Attribute.Enumeration<
+      ['random', 'weighted', 'fixed_order']
+    > &
+      Schema.Attribute.DefaultTo<'random'>;
     shuffle: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -721,6 +629,8 @@ export interface ApiQuestionQuestion extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     difficulty: Schema.Attribute.Integer;
+    estimatedTime: Schema.Attribute.Integer;
+    explanation: Schema.Attribute.Text;
     levels: Schema.Attribute.Relation<'manyToMany', 'api::level.level'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -731,9 +641,20 @@ export interface ApiQuestionQuestion extends Struct.CollectionTypeSchema {
     options: Schema.Attribute.JSON;
     publishedAt: Schema.Attribute.DateTime;
     skills: Schema.Attribute.Relation<'manyToMany', 'api::skill.skill'>;
+    status: Schema.Attribute.Enumeration<['draft', 'published']> &
+      Schema.Attribute.DefaultTo<'published'>;
+    tags: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
     topics: Schema.Attribute.Relation<'manyToMany', 'api::topic.topic'>;
     type: Schema.Attribute.Enumeration<
-      ['multiple_choice', 'fill_blank', 'true_false', 'short_answer']
+      [
+        'multiple_choice',
+        'single_choice',
+        'fill_blank',
+        'listening',
+        'matching',
+        'true_false',
+        'short_answer',
+      ]
     > &
       Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
@@ -807,6 +728,50 @@ export interface ApiTopicTopic extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface ApiUserAnswerUserAnswer extends Struct.CollectionTypeSchema {
+  collectionName: 'user_answers';
+  info: {
+    description: 'User answer for a question within a lesson attempt';
+    displayName: 'User Answer';
+    pluralName: 'user-answers';
+    singularName: 'user-answer';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    earnedScore: Schema.Attribute.Integer;
+    isCorrect: Schema.Attribute.Boolean;
+    lessonAttempt: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::lesson-attempt.lesson-attempt'
+    > &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::user-answer.user-answer'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    question: Schema.Attribute.Relation<'manyToOne', 'api::question.question'> &
+      Schema.Attribute.Required;
+    response: Schema.Attribute.JSON & Schema.Attribute.Required;
+    timeSpent: Schema.Attribute.Integer;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
+      Schema.Attribute.Required;
   };
 }
 
@@ -1320,17 +1285,14 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::about.about': ApiAboutAbout;
-      'api::article.article': ApiArticleArticle;
-      'api::author.author': ApiAuthorAuthor;
-      'api::category.category': ApiCategoryCategory;
-      'api::global.global': ApiGlobalGlobal;
+      'api::lesson-attempt.lesson-attempt': ApiLessonAttemptLessonAttempt;
       'api::lesson.lesson': ApiLessonLesson;
       'api::level.level': ApiLevelLevel;
       'api::question-bank.question-bank': ApiQuestionBankQuestionBank;
       'api::question.question': ApiQuestionQuestion;
       'api::skill.skill': ApiSkillSkill;
       'api::topic.topic': ApiTopicTopic;
+      'api::user-answer.user-answer': ApiUserAnswerUserAnswer;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

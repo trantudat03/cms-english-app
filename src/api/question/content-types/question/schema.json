@@ -23,7 +23,10 @@
       "type": "enumeration",
       "enum": [
         "multiple_choice",
+        "single_choice",
         "fill_blank",
+        "listening",
+        "matching",
         "true_false",
         "short_answer"
       ],
@@ -35,6 +38,24 @@
     "correctAnswer": {
       "type": "json",
       "private": true
+    },
+    "explanation": {
+      "type": "text"
+    },
+    "tags": {
+      "type": "json",
+      "default": []
+    },
+    "estimatedTime": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "default": "published"
     },
     "difficulty": {
       "type": "integer"
