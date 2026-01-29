@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_answers",
+  "info": {
+    "singularName": "user-answer",
+    "pluralName": "user-answers",
+    "displayName": "User Answer",
+    "description": "User answer for a question within a lesson attempt"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "lessonAttempt": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::lesson-attempt.lesson-attempt",
+      "inversedBy": "answers",
+      "required": true
+    },
+    "question": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::question.question",
+      "required": true
+    },
+    "response": {
+      "type": "json",
+      "required": true
+    },
+    "isCorrect": {
+      "type": "boolean"
+    },
+    "timeSpent": {
+      "type": "integer"
+    },
+    "earnedScore": {
+      "type": "integer"
+    }
+  }
+}
+

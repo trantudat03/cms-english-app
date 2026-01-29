@@ -1,0 +1,76 @@
+{
+  "kind": "collectionType",
+  "collectionName": "lesson_attempts",
+  "info": {
+    "singularName": "lesson-attempt",
+    "pluralName": "lesson-attempts",
+    "displayName": "Lesson Attempt",
+    "description": "Snapshot of generated questions for a user starting a lesson"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "lesson": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::lesson.lesson",
+      "inversedBy": "attempts",
+      "required": true
+    },
+    "questionBank": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::question-bank.question-bank"
+    },
+    "generatedQuestionIds": {
+      "type": "json",
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "in_progress",
+        "completed",
+        "expired"
+      ],
+      "required": true,
+      "default": "in_progress"
+    },
+    "startedAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "submittedAt": {
+      "type": "datetime"
+    },
+    "score": {
+      "type": "integer"
+    },
+    "correctCount": {
+      "type": "integer"
+    },
+    "totalQuestions": {
+      "type": "integer"
+    },
+    "timeSpent": {
+      "type": "integer"
+    },
+    "configSnapshot": {
+      "type": "json"
+    },
+    "answers": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-answer.user-answer",
+      "mappedBy": "lessonAttempt"
+    }
+  }
+}

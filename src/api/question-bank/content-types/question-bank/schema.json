@@ -30,6 +30,15 @@
       "type": "integer",
       "default": 10
     },
+    "randomizationStrategy": {
+      "type": "enumeration",
+      "enum": [
+        "random",
+        "weighted",
+        "fixed_order"
+      ],
+      "default": "random"
+    },
     "shuffle": {
       "type": "boolean",
       "default": true

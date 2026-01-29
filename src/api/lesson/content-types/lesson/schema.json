@@ -22,6 +22,15 @@
     "description": {
       "type": "text"
     },
+    "lessonType": {
+      "type": "enumeration",
+      "enum": [
+        "lesson",
+        "quiz",
+        "test"
+      ],
+      "default": "quiz"
+    },
     "questionBank": {
       "type": "relation",
       "relation": "manyToOne",
@@ -31,6 +40,29 @@
     },
     "questionCount": {
       "type": "integer"
+    },
+    "timeLimit": {
+      "type": "integer"
+    },
+    "passScore": {
+      "type": "integer"
+    },
+    "retryPolicy": {
+      "type": "json",
+      "default": {}
+    },
+    "shuffleQuestions": {
+      "type": "boolean"
+    },
+    "showExplanationOnSubmit": {
+      "type": "boolean",
+      "default": false
+    },
+    "attempts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::lesson-attempt.lesson-attempt",
+      "mappedBy": "lesson"
     }
   }
 }
