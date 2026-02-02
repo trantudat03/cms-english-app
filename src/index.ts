@@ -1,4 +1,6 @@
 import type { Core } from '@strapi/strapi';
+import { registerUsersPermissionsPasswordResetHardening } from './utils/users-permissions/password-reset';
+import { extendUsersPermissionsUserSchema } from './utils/users-permissions/user-schema';
 
 export default {
   /**
@@ -7,7 +9,10 @@ export default {
    *
    * This gives you an opportunity to extend code.
    */
-  register(/* { strapi }: { strapi: Core.Strapi } */) {},
+  register({ strapi }: { strapi: Core.Strapi }) {
+    extendUsersPermissionsUserSchema(strapi);
+    registerUsersPermissionsPasswordResetHardening(strapi);
+  },
 
   /**
    * An asynchronous bootstrap function that runs before
