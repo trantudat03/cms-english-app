@@ -156,6 +156,72 @@ export default factories.createCoreController('api::lesson.lesson', ({ strapi })
       | null
       | undefined;
 
+    const existingAttempts = (await strapi.entityService.findMany('api::lesson-attempt.lesson-attempt' as any, {
+      filters: { user: user.id, lesson: id, status: 'in_progress' },
+      sort: ['startedAt:desc', 'id:desc'],
+      limit: 1,
+      fields: ['id', 'status', 'startedAt', 'generatedQuestionIds'],
+      populate: { questionBank: { fields: ['name'] } },
+    } as any)) as any[];
+
+    const existingAttempt = Array.isArray(existingAttempts) ? existingAttempts[0] : null;
+    if (existingAttempt) {
+      const generatedQuestionIds = Array.isArray(existingAttempt.generatedQuestionIds)
+        ? existingAttempt.generatedQuestionIds.map((v: unknown) => Number(v)).filter((v: number) => Number.isFinite(v))
+        : [];
+
+      if (generatedQuestionIds.length === 0) {
+        ctx.throw(400, 'Attempt has no generated questions');
+      }
+
+      const rows = (await strapi.entityService.findMany('api::question.question', {
+        filters: { id: { $in: generatedQuestionIds } },
+        fields: ['content', 'type', 'options', 'difficulty'],
+        limit: generatedQuestionIds.length,
+      } as any)) as any[];
+
+      const questionMap = new Map<number, SelectedQuestion>();
+      for (const q of rows) {
+        const qid = Number(q.id);
+        if (!Number.isFinite(qid)) continue;
+        questionMap.set(qid, {
+          id: q.id,
+          content: q.content,
+          type: q.type,
+          options: q.options ?? null,
+          difficulty: typeof q.difficulty === 'number' ? q.difficulty : null,
+        });
+      }
+
+      const orderedQuestions = generatedQuestionIds.map((qid) => questionMap.get(qid)).filter(Boolean) as SelectedQuestion[];
+
+      const responseQuestionBank =
+        questionBank ??
+        (existingAttempt.questionBank
+          ? ({ id: existingAttempt.questionBank.id, name: existingAttempt.questionBank.name } as any)
+          : null);
+
+      if (!responseQuestionBank) {
+        ctx.throw(400, 'Lesson is missing a question bank');
+      }
+
+      return {
+        attempt: {
+          id: existingAttempt.id,
+          status: 'in_progress',
+          startedAt: existingAttempt.startedAt,
+        },
+        lesson: {
+          id: lessonEntity.id,
+          title: lessonEntity.title,
+          description: lessonEntity.description ?? null,
+        },
+        questionBank: { id: responseQuestionBank.id, name: responseQuestionBank.name },
+        count: orderedQuestions.length,
+        questions: orderedQuestions,
+      };
+    }
+
     if (!questionBank) {
       ctx.throw(400, 'Lesson is missing a question bank');
     }
