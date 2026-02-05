@@ -22,7 +22,10 @@ export default factories.createCoreController('api::lesson-attempt.lesson-attemp
       fields: ['status', 'startedAt', 'submittedAt', 'score', 'correctCount', 'totalQuestions', 'timeSpent'],
       populate: {
         user: { fields: ['id'] },
-        lesson: { fields: ['title', 'description', 'lessonType', 'passScore', 'timeLimit'] },
+        lesson: {
+          fields: ['title', 'description', 'lessonType', 'passScore', 'timeLimit', 'backgroundColor'],
+          populate: { background: true, mascot: true },
+        },
         questionBank: { fields: ['name'] },
         answers: {
           fields: ['response', 'isCorrect', 'timeSpent', 'earnedScore', 'createdAt'],
@@ -122,7 +125,10 @@ export default factories.createCoreController('api::lesson-attempt.lesson-attemp
       where,
       select: ['id', 'status', 'startedAt', 'submittedAt', 'score', 'correctCount', 'totalQuestions', 'timeSpent'],
       populate: {
-        lesson: { select: ['id', 'title', 'description', 'lessonType', 'passScore', 'timeLimit'] },
+        lesson: {
+          select: ['id', 'title', 'description', 'lessonType', 'passScore', 'timeLimit', 'backgroundColor'],
+          populate: { background: true, mascot: true },
+        },
         questionBank: { select: ['id', 'name'] },
       },
       orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],

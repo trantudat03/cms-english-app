@@ -22,7 +22,37 @@ type StartLessonAttemptResponse = StartLessonResponse & {
   };
 };
 
+const mergePopulate = (existing: unknown, extra: Record<string, any>): any => {
+  if (existing == null) return extra;
+  if (existing === '*' || existing === true) return existing;
+  if (typeof existing === 'string') {
+    if (existing.includes('*')) return '*';
+    return extra;
+  }
+  if (Array.isArray(existing)) return '*';
+  if (typeof existing === 'object') return { ...(existing as any), ...extra };
+  return extra;
+};
+
 export default factories.createCoreController('api::lesson.lesson', ({ strapi }) => ({
+  async find(ctx) {
+    const query = (ctx.query ?? {}) as any;
+    ctx.query = {
+      ...query,
+      populate: mergePopulate(query.populate, { background: true, mascot: true }),
+    };
+    return await super.find(ctx);
+  },
+
+  async findOne(ctx) {
+    const query = (ctx.query ?? {}) as any;
+    ctx.query = {
+      ...query,
+      populate: mergePopulate(query.populate, { background: true, mascot: true }),
+    };
+    return await super.findOne(ctx);
+  },
+
   async start(ctx): Promise<StartLessonResponse> {
     const id = Number(ctx.params.id);
     if (!Number.isFinite(id)) {

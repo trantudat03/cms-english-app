@@ -503,6 +503,8 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::lesson-attempt.lesson-attempt'
     >;
+    background: Schema.Attribute.Media<'images'>;
+    backgroundColor: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -515,6 +517,7 @@ export interface ApiLessonLesson extends Struct.CollectionTypeSchema {
       'api::lesson.lesson'
     > &
       Schema.Attribute.Private;
+    mascot: Schema.Attribute.Media<'images'>;
     passScore: Schema.Attribute.Integer;
     publishedAt: Schema.Attribute.DateTime;
     questionBank: Schema.Attribute.Relation<
@@ -1233,6 +1236,7 @@ export interface PluginUsersPermissionsUser
     timestamps: true;
   };
   attributes: {
+    avatar: Schema.Attribute.Media<'images'>;
     blocked: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     confirmationToken: Schema.Attribute.String & Schema.Attribute.Private;
     confirmed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;

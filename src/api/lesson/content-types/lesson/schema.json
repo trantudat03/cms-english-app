@@ -22,6 +22,25 @@
     "description": {
       "type": "text"
     },
+    "background": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "backgroundColor": {
+      "type": "string"
+    },
+    "mascot": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
     "lessonType": {
       "type": "enumeration",
       "enum": [

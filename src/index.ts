@@ -1,5 +1,84 @@
 import type { Core } from '@strapi/strapi';
 
+const USER_UID = 'plugin::users-permissions.user';
+const USER_SAFE_POPULATE = {
+  avatar: true,
+  role: { fields: ['id', 'name', 'type'] },
+};
+
+const stripSensitiveUserFields = (user: unknown) => {
+  if (user == null || typeof user !== 'object' || Array.isArray(user)) return user;
+
+  const sanitized: Record<string, unknown> = { ...(user as Record<string, unknown>) };
+  delete sanitized.password;
+  delete sanitized.resetPasswordToken;
+  delete sanitized.confirmationToken;
+  return sanitized;
+};
+
+const stripSensitiveFromBody = (body: unknown) => {
+  if (Array.isArray(body)) return body.map(stripSensitiveUserFields);
+  if (body == null || typeof body !== 'object') return body;
+
+  const record = body as Record<string, unknown>;
+  if ('user' in record) {
+    return { ...record, user: stripSensitiveUserFields(record.user) };
+  }
+
+  return stripSensitiveUserFields(record);
+};
+
+const sanitizeUserEntity = async (strapi: Core.Strapi, user: unknown, ctx: any) => {
+  const schema = strapi.getModel(USER_UID);
+  const auth = ctx?.state?.auth;
+  return strapi.contentAPI.sanitize.output(user as any, schema as any, { auth });
+};
+
+const fetchAndSanitizeUserById = async (strapi: Core.Strapi, id: unknown, ctx: any) => {
+  const user = await strapi.db.query(USER_UID).findOne({
+    where: { id },
+    populate: USER_SAFE_POPULATE,
+  });
+  if (!user) return null;
+  return stripSensitiveUserFields(await sanitizeUserEntity(strapi, user, ctx));
+};
+
+const enforceUserSafePopulate = (ctx: any) => {
+  const query = ctx.query ?? {};
+  ctx.query = {
+    ...query,
+    populate: USER_SAFE_POPULATE,
+  };
+};
+
+const postProcessUserResponse = async (strapi: Core.Strapi, ctx: any) => {
+  const body = ctx.body;
+
+  if (body == null || typeof body !== 'object') {
+    ctx.body = stripSensitiveFromBody(body);
+    return;
+  }
+
+  if (Array.isArray(body)) {
+    ctx.body = stripSensitiveFromBody(body);
+    return;
+  }
+
+  if (body.user?.id != null) {
+    const populatedUser = await fetchAndSanitizeUserById(strapi, body.user.id, ctx);
+    ctx.body = populatedUser ? { ...body, user: populatedUser } : stripSensitiveFromBody(body);
+    return;
+  }
+
+  if (body.id != null) {
+    const populatedUser = await fetchAndSanitizeUserById(strapi, body.id, ctx);
+    ctx.body = populatedUser ?? stripSensitiveUserFields(body);
+    return;
+  }
+
+  ctx.body = stripSensitiveFromBody(body);
+};
+
 export default {
   /**
    * An asynchronous register function that runs before
@@ -7,7 +86,47 @@ export default {
    *
    * This gives you an opportunity to extend code.
    */
-  register(/* { strapi }: { strapi: Core.Strapi } */) {},
+  register({ strapi }: { strapi: Core.Strapi }) {
+    const usersPermissions = strapi.plugin('users-permissions');
+    if (!usersPermissions) return;
+
+    const wrapUserQuery = (action: Function) => {
+      return async (ctx: any) => {
+        enforceUserSafePopulate(ctx);
+        const result = await action(ctx);
+        await postProcessUserResponse(strapi, ctx);
+        return result;
+      };
+    };
+
+    const wrapPostProcess = (action: Function) => {
+      return async (...args: any[]) => {
+        const ctx = args[0];
+        const result = await action(...args);
+        if (ctx) {
+          await postProcessUserResponse(strapi, ctx);
+        }
+        return result;
+      };
+    };
+
+    const controllers: any = usersPermissions.controllers;
+
+    if (controllers?.user?.me) controllers.user.me = wrapUserQuery(controllers.user.me);
+    if (controllers?.user?.find) controllers.user.find = wrapUserQuery(controllers.user.find);
+    if (controllers?.user?.findOne) controllers.user.findOne = wrapUserQuery(controllers.user.findOne);
+    if (controllers?.user?.create) controllers.user.create = wrapPostProcess(controllers.user.create);
+    if (controllers?.user?.update) controllers.user.update = wrapPostProcess(controllers.user.update);
+    if (controllers?.user?.destroy) controllers.user.destroy = wrapPostProcess(controllers.user.destroy);
+
+    if (controllers?.auth) {
+      Object.keys(controllers.auth).forEach((key) => {
+        if (typeof controllers.auth[key] === 'function') {
+          controllers.auth[key] = wrapPostProcess(controllers.auth[key]);
+        }
+      });
+    }
+  },
 
   /**
    * An asynchronous bootstrap function that runs before
@@ -17,6 +136,25 @@ export default {
    * run jobs, or perform some special logic.
    */
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
+    const g = globalThis as any;
+    if (!g.__strapiTempCleanupRejectionHandler) {
+      g.__strapiTempCleanupRejectionHandler = true;
+      process.on('unhandledRejection', (reason) => {
+        const err = reason as any;
+        const code = err?.code;
+        const syscall = err?.syscall;
+        const filePath = err?.path;
+        if ((code === 'EBUSY' || code === 'EPERM') && syscall === 'unlink' && typeof filePath === 'string') {
+          strapi.log.warn('Ignored temp file cleanup error', {
+            code,
+            syscall,
+            path: filePath,
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
+      });
+    }
+
     const knex = strapi.db.connection;
 
     const hasQuestionsTable = await knex.schema.hasTable('questions');
