@@ -72,6 +72,27 @@ const extractCorrect = (correctAnswer: CorrectAnswerShape): { answerId?: string;
   return {};
 };
 
+const getPossibleAnswers = (correctAnswer: CorrectAnswerShape): string[] => {
+  const { answer, answers } = extractCorrect(correctAnswer);
+  const possibilities: Set<string> = new Set();
+
+  if (typeof answer === 'string') {
+    const n = normalizeText(answer);
+    if (n) possibilities.add(n);
+  }
+
+  if (Array.isArray(answers)) {
+    for (const a of answers) {
+      if (typeof a === 'string') {
+        const n = normalizeText(a);
+        if (n) possibilities.add(n);
+      }
+    }
+  }
+
+  return Array.from(possibilities);
+};
+
 const gradeMultipleChoice = (response: unknown, correctAnswer: CorrectAnswerShape): GradeResult => {
   const expectedId = extractAnswerId(extractCorrect(correctAnswer).answerId ?? correctAnswer);
   if (!expectedId) return { isCorrect: null, earnedScore: 0, expected: null };
@@ -82,13 +103,15 @@ const gradeMultipleChoice = (response: unknown, correctAnswer: CorrectAnswerShap
 };
 
 const gradeFillBlank = (response: unknown, correctAnswer: CorrectAnswerShape): GradeResult => {
-  const expected = extractCorrect(correctAnswer).answer;
-  const expectedText = normalizeText(expected);
-  if (!expectedText) return { isCorrect: null, earnedScore: 0, expected: null };
+  const possibilities = getPossibleAnswers(correctAnswer);
+  if (possibilities.length === 0) return { isCorrect: null, earnedScore: 0, expected: null };
+
   const given = normalizeText(extractTextAnswer(response));
-  if (!given) return { isCorrect: false, earnedScore: 0, expected: { answer: expected } };
-  const isCorrect = given === expectedText;
-  return { isCorrect, earnedScore: isCorrect ? 1 : 0, expected: { answer: expected } };
+  const expectedPayload = { answer: possibilities[0], answers: possibilities };
+
+  if (!given) return { isCorrect: false, earnedScore: 0, expected: expectedPayload };
+  const isCorrect = possibilities.includes(given);
+  return { isCorrect, earnedScore: isCorrect ? 1 : 0, expected: expectedPayload };
 };
 
 const gradeTrueFalse = (response: unknown, correctAnswer: CorrectAnswerShape): GradeResult => {
@@ -101,14 +124,21 @@ const gradeTrueFalse = (response: unknown, correctAnswer: CorrectAnswerShape): G
 };
 
 const gradeShortAnswer = (response: unknown, correctAnswer: CorrectAnswerShape): GradeResult => {
-  const expected = extractCorrect(correctAnswer).answer;
-  const expectedText = normalizeText(expected);
-  if (!expectedText) return { isCorrect: null, earnedScore: 0, expected: null };
-  if (expectedText.startsWith('example:')) return { isCorrect: null, earnedScore: 0, expected: { answer: expected } };
+  const possibilities = getPossibleAnswers(correctAnswer);
+
+  const validPossibilities = possibilities.filter((p) => !p.startsWith('example:'));
+  const expectedPayload = { answer: possibilities[0], answers: possibilities };
+
+  if (possibilities.length > 0 && validPossibilities.length === 0) {
+    return { isCorrect: null, earnedScore: 0, expected: expectedPayload };
+  }
+
+  if (validPossibilities.length === 0) return { isCorrect: null, earnedScore: 0, expected: null };
+
   const given = normalizeText(extractTextAnswer(response));
-  if (!given) return { isCorrect: false, earnedScore: 0, expected: { answer: expected } };
-  const isCorrect = given === expectedText;
-  return { isCorrect, earnedScore: isCorrect ? 1 : 0, expected: { answer: expected } };
+  if (!given) return { isCorrect: false, earnedScore: 0, expected: expectedPayload };
+  const isCorrect = validPossibilities.includes(given);
+  return { isCorrect, earnedScore: isCorrect ? 1 : 0, expected: expectedPayload };
 };
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
