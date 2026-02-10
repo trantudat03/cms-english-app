@@ -666,6 +666,47 @@ export interface ApiQuestionQuestion extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiRefreshTokenRefreshToken
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'refresh_tokens';
+  info: {
+    description: 'Persisted refresh tokens for rotation and secure logout';
+    displayName: 'Refresh Token';
+    pluralName: 'refresh-tokens';
+    singularName: 'refresh-token';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    expiresAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::refresh-token.refresh-token'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    revoked: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<false>;
+    token: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
+      Schema.Attribute.Required;
+  };
+}
+
 export interface ApiSkillSkill extends Struct.CollectionTypeSchema {
   collectionName: 'skills';
   info: {
@@ -1294,6 +1335,7 @@ declare module '@strapi/strapi' {
       'api::level.level': ApiLevelLevel;
       'api::question-bank.question-bank': ApiQuestionBankQuestionBank;
       'api::question.question': ApiQuestionQuestion;
+      'api::refresh-token.refresh-token': ApiRefreshTokenRefreshToken;
       'api::skill.skill': ApiSkillSkill;
       'api::topic.topic': ApiTopicTopic;
       'api::user-answer.user-answer': ApiUserAnswerUserAnswer;

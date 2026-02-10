@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "refresh_tokens",
+  "info": {
+    "singularName": "refresh-token",
+    "pluralName": "refresh-tokens",
+    "displayName": "Refresh Token",
+    "description": "Persisted refresh tokens for rotation and secure logout"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "token": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "expiresAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "revoked": {
+      "type": "boolean",
+      "default": false,
+      "required": true
+    }
+  }
+}
