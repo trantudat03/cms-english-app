@@ -261,5 +261,13 @@ export default {
         );
       }
     }
+
+    const hasRefreshTokens = await knex.schema.hasTable('refresh_tokens');
+    if (hasRefreshTokens) {
+      const hasTokenHash = await knex.schema.hasColumn('refresh_tokens', 'token_hash');
+      if (hasTokenHash) {
+        await knex.raw('CREATE INDEX IF NOT EXISTS refresh_tokens_token_hash_idx ON refresh_tokens (token_hash)');
+      }
+    }
   },
 };
