@@ -670,7 +670,7 @@ export interface ApiRefreshTokenRefreshToken
   extends Struct.CollectionTypeSchema {
   collectionName: 'refresh_tokens';
   info: {
-    description: 'Persisted refresh tokens for rotation and secure logout';
+    description: 'Stores hashed refresh tokens for session management with rotation';
     displayName: 'Refresh Token';
     pluralName: 'refresh-tokens';
     singularName: 'refresh-token';
@@ -682,7 +682,11 @@ export interface ApiRefreshTokenRefreshToken
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    deviceInfo: Schema.Attribute.String;
     expiresAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    isRevoked: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -690,10 +694,7 @@ export interface ApiRefreshTokenRefreshToken
     > &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
-    revoked: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<false>;
-    token: Schema.Attribute.String &
+    tokenHash: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
     updatedAt: Schema.Attribute.DateTime;

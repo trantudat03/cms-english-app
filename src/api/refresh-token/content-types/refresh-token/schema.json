@@ -5,7 +5,7 @@
     "singularName": "refresh-token",
     "pluralName": "refresh-tokens",
     "displayName": "Refresh Token",
-    "description": "Persisted refresh tokens for rotation and secure logout"
+    "description": "Stores hashed refresh tokens for session management with rotation"
   },
   "options": {
     "draftAndPublish": false
@@ -18,7 +18,7 @@
       "target": "plugin::users-permissions.user",
       "required": true
     },
-    "token": {
+    "tokenHash": {
       "type": "string",
       "required": true,
       "unique": true
@@ -27,10 +27,13 @@
       "type": "datetime",
       "required": true
     },
-    "revoked": {
+    "isRevoked": {
       "type": "boolean",
       "default": false,
       "required": true
+    },
+    "deviceInfo": {
+      "type": "string"
     }
   }
 }
