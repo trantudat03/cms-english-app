@@ -1,10 +1,15 @@
 import type { Core } from '@strapi/strapi';
+import { randomUUID } from 'crypto';
+
+const jwt: any = require('jsonwebtoken');
 
 const USER_UID = 'plugin::users-permissions.user';
 const USER_SAFE_POPULATE = {
   avatar: true,
   role: { fields: ['id', 'name', 'type'] },
 };
+
+const REFRESH_COOKIE_NAME = 'refreshToken';
 
 const stripSensitiveUserFields = (user: unknown) => {
   if (user == null || typeof user !== 'object' || Array.isArray(user)) return user;
@@ -90,6 +95,68 @@ export default {
     const usersPermissions = strapi.plugin('users-permissions');
     if (!usersPermissions) return;
 
+    const getRequiredEnv = (name: string) => {
+      const value = process.env[name];
+      if (!value) {
+        const err: any = new Error(`Missing required env var: ${name}`);
+        err.status = 500;
+        throw err;
+      }
+      return value;
+    };
+
+    const getRestPrefix = () => {
+      const prefix = strapi?.config?.get?.('api.rest.prefix');
+      if (typeof prefix === 'string' && prefix.length > 0) return prefix;
+      return '/api';
+    };
+
+    const getRefreshCookiePath = () => `${getRestPrefix()}/auth/refresh`;
+
+    const setRefreshCookie = (ctx: any, token: string, expiresAt: Date | null) => {
+      ctx.cookies.set(REFRESH_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        path: getRefreshCookiePath(),
+        ...(expiresAt ? { expires: expiresAt } : {}),
+      });
+    };
+
+    const clearRefreshCookie = (ctx: any) => {
+      ctx.cookies.set(REFRESH_COOKIE_NAME, '', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+        path: getRefreshCookiePath(),
+        expires: new Date(0),
+      });
+    };
+
+    const signAccessToken = ({ userId, role }: { userId: number; role: unknown }) => {
+      const secret = getRequiredEnv('ACCESS_TOKEN_SECRET');
+      const expiresIn = process.env.ACCESS_TOKEN_EXPIRES || '10m';
+      return jwt.sign({ userId, role }, secret, { expiresIn });
+    };
+
+    const signRefreshToken = ({ userId }: { userId: number }) => {
+      const secret = getRequiredEnv('REFRESH_TOKEN_SECRET');
+      const expiresIn = process.env.REFRESH_TOKEN_EXPIRES || '7d';
+      const jti = randomUUID();
+      const token = jwt.sign({ userId, jti }, secret, { expiresIn });
+      const decoded = jwt.decode(token);
+      const expiresAt =
+        decoded && typeof decoded === 'object' && typeof decoded.exp === 'number'
+          ? new Date(decoded.exp * 1000)
+          : null;
+      return { token, jti, expiresAt };
+    };
+
+    const verifyRefreshToken = (token: string) => {
+      const secret = getRequiredEnv('REFRESH_TOKEN_SECRET');
+      return jwt.verify(token, secret);
+    };
+
     const wrapUserQuery = (action: Function) => {
       return async (ctx: any) => {
         enforceUserSafePopulate(ctx);
@@ -111,6 +178,211 @@ export default {
     };
 
     const controllers: any = usersPermissions.controllers;
+
+    if (controllers?.auth?.callback && typeof controllers.auth.callback === 'function') {
+      const originalCallback = controllers.auth.callback;
+      controllers.auth.callback = async (ctx: any) => {
+        const provider = String(ctx?.params?.provider ?? '');
+
+        await originalCallback(ctx);
+
+        if (provider !== 'local') return;
+
+        const user = ctx?.body?.user;
+        const userId = Number(user?.id);
+        if (!Number.isFinite(userId) || userId <= 0) ctx.throw(500, 'Invalid authenticated user');
+
+        const role = user?.role?.type ?? user?.role?.name ?? null;
+        const accessToken = signAccessToken({ userId, role });
+        const { token: refreshToken, expiresAt } = signRefreshToken({ userId });
+
+        await strapi.entityService.create('api::refresh-token.refresh-token', {
+          data: {
+            user: userId,
+            token: refreshToken,
+            expiresAt: expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            revoked: false,
+          },
+        });
+
+        setRefreshCookie(ctx, refreshToken, expiresAt);
+
+        if (ctx.body && typeof ctx.body === 'object') {
+          ctx.body = { ...(ctx.body as any), jwt: accessToken };
+        } else {
+          ctx.body = { jwt: accessToken, user };
+        }
+      };
+    }
+
+    if (controllers?.auth?.local && typeof controllers.auth.local === 'function') {
+      const originalLocal = controllers.auth.local;
+      controllers.auth.local = async (ctx: any) => {
+        await originalLocal(ctx);
+
+        const user = ctx?.body?.user;
+        const userId = Number(user?.id);
+        if (!Number.isFinite(userId) || userId <= 0) return;
+
+        const role = user?.role?.type ?? user?.role?.name ?? null;
+        const accessToken = signAccessToken({ userId, role });
+        const { token: refreshToken, expiresAt } = signRefreshToken({ userId });
+
+        await strapi.entityService.create('api::refresh-token.refresh-token', {
+          data: {
+            user: userId,
+            token: refreshToken,
+            expiresAt: expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            revoked: false,
+          },
+        } as any);
+
+        setRefreshCookie(ctx, refreshToken, expiresAt);
+
+        if (ctx.body && typeof ctx.body === 'object') {
+          ctx.body = { ...(ctx.body as any), jwt: accessToken };
+        } else {
+          ctx.body = { jwt: accessToken, user };
+        }
+      };
+    }
+
+    if (controllers?.auth?.login && typeof controllers.auth.login === 'function') {
+      const originalLogin = controllers.auth.login;
+      controllers.auth.login = async (ctx: any) => {
+        await originalLogin(ctx);
+
+        const user = ctx?.body?.user;
+        const userId = Number(user?.id);
+        if (!Number.isFinite(userId) || userId <= 0) return;
+
+        const role = user?.role?.type ?? user?.role?.name ?? null;
+        const accessToken = signAccessToken({ userId, role });
+        const { token: refreshToken, expiresAt } = signRefreshToken({ userId });
+
+        await strapi.entityService.create('api::refresh-token.refresh-token', {
+          data: {
+            user: userId,
+            token: refreshToken,
+            expiresAt: expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            revoked: false,
+          },
+        } as any);
+
+        setRefreshCookie(ctx, refreshToken, expiresAt);
+
+        if (ctx.body && typeof ctx.body === 'object') {
+          ctx.body = { ...(ctx.body as any), jwt: accessToken };
+        } else {
+          ctx.body = { jwt: accessToken, user };
+        }
+      };
+    }
+
+    if (controllers?.auth && typeof controllers.auth === 'object') {
+      if (typeof controllers.auth.refresh !== 'function') {
+        controllers.auth.refresh = async (ctx: any) => {
+          const token = ctx?.cookies?.get?.(REFRESH_COOKIE_NAME);
+          if (!token) ctx.throw(401, 'Unauthorized');
+
+          let payload: any;
+          try {
+            payload = verifyRefreshToken(token);
+          } catch (e: any) {
+            if (e && e.status === 500) ctx.throw(500, e.message);
+            ctx.throw(401, 'Unauthorized');
+          }
+
+          const userId = Number(payload?.userId);
+          if (!Number.isFinite(userId) || userId <= 0) ctx.throw(401, 'Unauthorized');
+
+          const rows = await strapi.entityService.findMany('api::refresh-token.refresh-token', {
+            filters: { token },
+            limit: 1,
+            sort: ['createdAt:desc', 'id:desc'],
+            populate: { user: { fields: ['id'], populate: { role: { fields: ['id', 'name', 'type'] } } } },
+          } as any);
+
+          const record = Array.isArray(rows) ? (rows as any[])[0] : null;
+          if (!record || record.revoked === true) ctx.throw(401, 'Unauthorized');
+
+          const expiresAt = record.expiresAt ? new Date(record.expiresAt) : null;
+          if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() <= Date.now()) {
+            ctx.throw(401, 'Unauthorized');
+          }
+
+          await strapi.entityService.update('api::refresh-token.refresh-token', record.id, {
+            data: { revoked: true },
+          } as any);
+
+          const role = record?.user?.role?.type ?? record?.user?.role?.name ?? null;
+          const accessToken = signAccessToken({ userId, role });
+          const next = signRefreshToken({ userId });
+
+          await strapi.entityService.create('api::refresh-token.refresh-token', {
+            data: {
+              user: userId,
+              token: next.token,
+              expiresAt: next.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              revoked: false,
+            },
+          } as any);
+
+          setRefreshCookie(ctx, next.token, next.expiresAt);
+
+          ctx.body = { jwt: accessToken };
+        };
+      }
+
+      if (typeof controllers.auth.logout !== 'function') {
+        controllers.auth.logout = async (ctx: any) => {
+          const token = ctx?.cookies?.get?.(REFRESH_COOKIE_NAME);
+
+          if (token) {
+            const rows = await strapi.entityService.findMany('api::refresh-token.refresh-token', {
+              filters: { token },
+              limit: 1,
+              sort: ['createdAt:desc', 'id:desc'],
+            } as any);
+            const record = Array.isArray(rows) ? (rows as any[])[0] : null;
+            if (record && record.revoked !== true) {
+              await strapi.entityService.update('api::refresh-token.refresh-token', record.id, {
+                data: { revoked: true },
+              } as any);
+            }
+          }
+
+          clearRefreshCookie(ctx);
+          ctx.body = { ok: true };
+        };
+      }
+    }
+
+    if (usersPermissions.routes?.['content-api']?.routes && Array.isArray(usersPermissions.routes['content-api'].routes)) {
+      const routes: any[] = usersPermissions.routes['content-api'].routes;
+      const hasRoute = (method: string, path: string) =>
+        routes.some(
+          (r) => String(r?.method ?? '').toUpperCase() === method.toUpperCase() && String(r?.path ?? '') === path
+        );
+
+      if (!hasRoute('POST', '/auth/refresh')) {
+        routes.push({
+          method: 'POST',
+          path: '/auth/refresh',
+          handler: 'auth.refresh',
+          config: { auth: false },
+        });
+      }
+
+      if (!hasRoute('POST', '/auth/logout')) {
+        routes.push({
+          method: 'POST',
+          path: '/auth/logout',
+          handler: 'auth.logout',
+          config: { auth: false },
+        });
+      }
+    }
 
     if (controllers?.user?.me) controllers.user.me = wrapUserQuery(controllers.user.me);
     if (controllers?.user?.find) controllers.user.find = wrapUserQuery(controllers.user.find);

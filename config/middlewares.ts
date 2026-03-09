@@ -32,6 +32,14 @@ export default ({ env }) => [
   'strapi::query',
   'strapi::body',
   'strapi::session',
+  {
+    name: 'global::verify-access-token',
+    config: {},
+  },
+  {
+    name: 'global::ensure-login-refresh',
+    config: {},
+  },
   'strapi::favicon',
   'strapi::public',
 ];
