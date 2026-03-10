@@ -1,4 +1,6 @@
 import type { Core } from '@strapi/strapi';
+import fs from 'fs-extra';
+import path from 'path';
 
 const USER_UID = 'plugin::users-permissions.user';
 const USER_SAFE_POPULATE = {
@@ -87,6 +89,29 @@ export default {
    * This gives you an opportunity to extend code.
    */
   register({ strapi }: { strapi: Core.Strapi }) {
+    const documentationPlugin: any = strapi.plugin('documentation');
+    if (documentationPlugin) {
+      const overrideService: any = documentationPlugin.service('override');
+      const version = String(strapi.config.get('plugin::documentation.info.version') ?? '1.0.0');
+      const overridesDir = path.join(
+        strapi.dirs.app.extensions,
+        'documentation',
+        'documentation',
+        version,
+        'overrides'
+      );
+
+      const authOverridePath = path.join(overridesDir, 'auth.json');
+      if (fs.existsSync(authOverridePath)) {
+        overrideService.registerOverride(fs.readJsonSync(authOverridePath));
+      }
+
+      const lessonStartOverridePath = path.join(overridesDir, 'lesson-start.json');
+      if (fs.existsSync(lessonStartOverridePath)) {
+        overrideService.registerOverride(fs.readJsonSync(lessonStartOverridePath));
+      }
+    }
+
     const usersPermissions = strapi.plugin('users-permissions');
     if (!usersPermissions) return;
 

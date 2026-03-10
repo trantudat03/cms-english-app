@@ -1,4 +1,35 @@
 export default ({ env }) => ({
+  documentation: {
+    enabled: true,
+    config: {
+      openapi: '3.0.0',
+      info: {
+        version: '1.0.0',
+        title: 'My Strapi Project API',
+        description: 'API documentation for My Strapi Project',
+        termsOfService: 'YOUR_TERMS_OF_SERVICE_URL',
+        contact: {
+          name: 'TEAM',
+          email: 'contact-email@something.io',
+          url: 'mywebsite.io'
+        },
+        license: {
+          name: 'Apache 2.0',
+          url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+        },
+      },
+      'x-strapi-config': {
+        // Show all plugins in documentation
+        path: '/documentation',
+      },
+      servers: [
+        { url: 'http://localhost:1337/api', description: 'Development server' },
+      ],
+      security: [
+        { bearerAuth: [] }
+      ]
+    }
+  },
   upload: {
     config: {
       provider: 'aws-s3',

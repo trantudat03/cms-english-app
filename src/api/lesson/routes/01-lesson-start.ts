@@ -7,6 +7,11 @@ const config: Core.RouterConfig = {
       method: 'GET',
       path: '/lessons/:id/start',
       handler: 'api::lesson.lesson.start',
+      config: {
+        policies: [],
+        description: 'Start a lesson',
+        tag: { plugin: 'lesson', name: 'Lesson' },
+      } as any,
     },
   ],
 };

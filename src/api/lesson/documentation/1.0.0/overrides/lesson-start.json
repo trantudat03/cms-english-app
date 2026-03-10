@@ -1,0 +1,66 @@
+{
+  "paths": {
+    "/test-api-override": {
+      "get": {
+        "tags": ["Test"],
+        "summary": "Test override in API folder",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/lessons/{id}/start": {
+      "get": {
+        "tags": ["Lesson"],
+        "summary": "Start a lesson attempt",
+        "description": "Start a lesson attempt for the given lesson ID",
+        "operationId": "lessonStart",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Lesson ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
