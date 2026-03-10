@@ -4,4 +4,21 @@ export default ({ env }) => ({
   app: {
     keys: env.array('APP_KEYS'),
   },
+  cron: {
+    enabled: true,
+    tasks: {
+      revokeExpiredRefreshTokens: {
+        task: async ({ strapi }) => {
+          const nowIso = new Date().toISOString();
+          await (strapi as any).db.query('api::refresh-token.refresh-token').updateMany({
+            where: { isRevoked: false, expiresAt: { $lt: nowIso } },
+            data: { isRevoked: true },
+          });
+        },
+        options: {
+          rule: '0 3 * * *',
+        },
+      },
+    },
+  },
 });

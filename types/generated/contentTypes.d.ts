@@ -670,7 +670,7 @@ export interface ApiRefreshTokenRefreshToken
   extends Struct.CollectionTypeSchema {
   collectionName: 'refresh_tokens';
   info: {
-    description: 'Stores hashed refresh tokens for session management with rotation';
+    description: 'Stores hashed refresh tokens for session management';
     displayName: 'Refresh Token';
     pluralName: 'refresh-tokens';
     singularName: 'refresh-token';

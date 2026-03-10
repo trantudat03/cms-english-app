@@ -5,7 +5,7 @@
     "singularName": "refresh-token",
     "pluralName": "refresh-tokens",
     "displayName": "Refresh Token",
-    "description": "Stores hashed refresh tokens for session management with rotation"
+    "description": "Stores hashed refresh tokens for session management"
   },
   "options": {
     "draftAndPublish": false

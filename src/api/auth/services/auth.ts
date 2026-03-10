@@ -83,56 +83,36 @@ export default {
     const tokenHash = hashToken(incomingRefreshToken);
     const now = new Date();
 
-    const result = await strapi.db.transaction(async () => {
-      const existing = await strapi.db.query('api::refresh-token.refresh-token').findOne({
-        where: { tokenHash },
-        populate: { user: { fields: ['id'] } },
-      } as any);
+    const existing = await strapi.db.query('api::refresh-token.refresh-token').findOne({
+      where: { tokenHash },
+      populate: { user: { fields: ['id'] } },
+    } as any);
 
-      if (!existing) {
-        const err: any = new Error('Invalid refresh token');
-        err.status = 400;
-        throw err;
-      }
-      if (existing.isRevoked) {
-        const err: any = new Error('Refresh token has been revoked');
-        err.status = 401;
-        throw err;
-      }
-      if (new Date(existing.expiresAt) <= now) {
-        const err: any = new Error('Refresh token expired');
-        err.status = 401;
-        throw err;
-      }
-
-      const updated = await strapi.db.query('api::refresh-token.refresh-token').update({
-        where: { id: existing.id, isRevoked: false },
+    if (!existing) {
+      const err: any = new Error('Invalid refresh token');
+      err.status = 400;
+      throw err;
+    }
+    if (existing.isRevoked) {
+      const err: any = new Error('Refresh token has been revoked');
+      err.status = 401;
+      throw err;
+    }
+    if (new Date(existing.expiresAt) <= now) {
+      await strapi.db.query('api::refresh-token.refresh-token').update({
+        where: { id: existing.id },
         data: { isRevoked: true },
       } as any);
-      if (!updated) {
-        const err: any = new Error('Refresh token already used');
-        err.status = 409;
-        throw err;
-      }
 
-      const userId = Number((existing as any).user?.id);
-      const accessToken = issueAccessToken(strapi, userId);
-      const newRefreshToken = generateRefreshToken();
-      const newHash = hashToken(newRefreshToken);
+      const err: any = new Error('Refresh token expired');
+      err.status = 401;
+      throw err;
+    }
 
-      await strapi.db.query('api::refresh-token.refresh-token').create({
-        data: {
-          user: userId,
-          tokenHash: newHash,
-          expiresAt: addMs(REFRESH_TOKEN_LIFESPAN_MS).toISOString(),
-          isRevoked: false,
-        },
-      } as any);
+    const userId = Number((existing as any).user?.id);
+    const accessToken = issueAccessToken(strapi, userId);
 
-      return { accessToken, newRefreshToken };
-    });
-
-    return { accessToken: result.accessToken, refreshToken: result.newRefreshToken };
+    return { accessToken, refreshToken: incomingRefreshToken };
   },
 
   async logout({ strapi }: StrapiCtx, incomingRefreshToken: string) {

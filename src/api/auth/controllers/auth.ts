@@ -24,8 +24,7 @@ export default {
     }
   },
 
-  // Refresh endpoint: rotates refresh token securely and returns new tokens.
-  // Rotation prevents replay attacks; old token is atomically revoked before issuing new one.
+  // Refresh endpoint: validates refresh token and returns a new access token.
   async refresh(ctx: any) {
     const { refreshToken } = ctx.request.body ?? {};
     if (typeof refreshToken !== 'string') {
@@ -33,12 +32,8 @@ export default {
     }
 
     try {
-      const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(
-        { strapi },
-        refreshToken
-      );
-
-      ctx.body = { accessToken, refreshToken: newRefreshToken };
+      const { accessToken } = await authService.refresh({ strapi }, refreshToken);
+      ctx.body = { accessToken, refreshToken };
     } catch (err: any) {
       ctx.throw(err.status ?? 500, err.message ?? 'Refresh failed');
     }
