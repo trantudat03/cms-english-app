@@ -60,6 +60,16 @@
       "allowedTypes": [
         "images"
       ]
+    },
+    "emailVerificationTokenHash": {
+      "type": "string",
+      "private": true,
+      "searchable": false
+    },
+    "emailVerificationTokenExpiresAt": {
+      "type": "datetime",
+      "private": true,
+      "searchable": false
     }
   }
 }

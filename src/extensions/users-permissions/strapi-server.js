@@ -13,6 +13,8 @@ const stripSensitiveUserFields = (user) => {
   delete sanitized.password;
   delete sanitized.resetPasswordToken;
   delete sanitized.confirmationToken;
+  delete sanitized.emailVerificationTokenHash;
+  delete sanitized.emailVerificationTokenExpiresAt;
   return sanitized;
 };
 

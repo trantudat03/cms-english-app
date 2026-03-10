@@ -5,6 +5,16 @@ const config: Core.RouterConfig = {
   routes: [
     {
       method: 'POST',
+      path: '/auth/register',
+      handler: 'api::auth.auth.register',
+      config: {
+        policies: [],
+        description: 'Register a new user and send verification email',
+        tag: { plugin: 'auth', name: 'Auth' },
+      } as any,
+    },
+    {
+      method: 'POST',
       path: '/auth/login',
       handler: 'api::auth.auth.login',
       config: {
@@ -30,6 +40,16 @@ const config: Core.RouterConfig = {
       config: {
         policies: [],
         description: 'Logout (revoke refresh token)',
+        tag: { plugin: 'auth', name: 'Auth' },
+      } as any,
+    },
+    {
+      method: 'GET',
+      path: '/auth/verify-email',
+      handler: 'api::auth.auth.verifyEmail',
+      config: {
+        policies: [],
+        description: 'Verify email using token and redirect to frontend',
         tag: { plugin: 'auth', name: 'Auth' },
       } as any,
     },
